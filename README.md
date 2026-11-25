@@ -29,6 +29,13 @@ Each environment has its own client id/secret pair — unlike legacy Mesh, there
 is no id shared across both. The environment switcher in the app decides which
 set is used per session request.
 
+> **⚠️ Keep the client secret on your server.** This harness mints the OAuth
+> token and creates the session in Electron's main process so it runs with no
+> backend. That's only safe on your own machine. Anything inside a packaged
+> desktop app can be extracted by its users, so in a real app call
+> `POST /oauth2/token` and `POST /v2/sessions` from your backend and pass only
+> the session's exchange code to the app. Start with Sandbox credentials.
+
 Run the app:
 
 ```bash
@@ -39,7 +46,7 @@ npm start          # bundles the renderer with esbuild, then launches Electron
 
 ## 🚀 Use it
 
-- **Production / Sandbox switcher** — a segmented toggle (Production is the
+- **Production / Sandbox switcher** — a segmented toggle (Sandbox is the
   default) that picks which MFS credentials/API host are used to create the
   session, and which Link deployment `openLink` loads. These must match.
 - **Destinations** — an editable list of token / network / wallet address rows
