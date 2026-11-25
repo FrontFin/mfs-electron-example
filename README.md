@@ -1,10 +1,7 @@
 # Electron + MFS Link Web SDK
 
 A minimal Electron app that embeds the [MFS Link Web SDK](https://github.com/FrontFin/web-sdk/tree/main/packages/link-web-sdk)
-(`@meshpayhq/link-web-sdk`) inside an iframe to exercise the Meshpay Link flow.
-
-Sibling of [`mesh-electron-example`](../mesh-electron-example), which does the
-same thing for legacy Mesh.
+(`@meshpayhq/link-web-sdk`) inside an iframe.
 
 ## ⚙️ Setup
 
