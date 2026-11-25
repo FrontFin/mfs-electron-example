@@ -31,7 +31,7 @@ There is no separate watch task — `npm start`/`npm run dev` rebuild on each la
 
 | File | Process | Responsibility |
 |------|---------|----------------|
-| `main.js` | main | Window creation; strips `X-Frame-Options` / CSP `frame-ancestors` for `meshpay.com` so the SDK iframe embeds; `ipcMain` handler that mints an S2S OAuth token (`POST /oauth2/token`, client_credentials) then calls `POST /v2/sessions` to get a session exchange code. Picks credentials/host from `MFS_ENVIRONMENTS` (`production` / `sandbox`) by `overrides.environment` (defaults to production). `buildSessionBody(toAddresses)` merges a renderer-supplied destination list into the request body (falls back to `DEFAULT_TO_ADDRESSES`) |
+| `main.js` | main | Window creation; strips `X-Frame-Options` / CSP `frame-ancestors` for `meshpay.com` so the SDK iframe embeds; `ipcMain` handler that mints an S2S OAuth token (`POST /oauth2/token`, client_credentials) then calls `POST /v2/sessions` to get a session exchange code. Picks credentials/host from `MFS_ENVIRONMENTS` (`production` / `sandbox`) by `overrides.environment` (defaults to sandbox). `buildSessionBody(toAddresses)` merges a renderer-supplied destination list into the request body (falls back to `DEFAULT_TO_ADDRESSES`) |
 | `preload.js` | preload | `contextBridge` exposes `window.mfs.createSession(overrides)` only (`overrides = { toAddresses, environment }`), resolving to `{ token, clientId, linkEnv }` |
 | `index.html` | renderer | UI: **Production / Sandbox** segmented switcher, **New Session** button, **Destinations** editor (token/network/address rows), `#mesh-container` iframe target; page CSP |
 | `src/renderer.js` | renderer | `openLink(token, clientId, { environment, target: { mode: 'iframe', element } })` wiring; Destinations editor state → `toAddresses` payload |
@@ -45,7 +45,7 @@ There is no separate watch task — `npm start`/`npm run dev` rebuild on each la
   the response's one-time exchange code (`token`) plus the `clientId` and SDK
   environment string (`linkEnv`) to use.
 - **Environment switcher** — a Production / Sandbox segmented control
-  (Production default). The selection decides both which MFS API host/creds
+  (Sandbox default). The selection decides both which MFS API host/creds
   `main.js` uses (`https://api.meshpay.com` vs `https://api.sbx.meshpay.com`)
   and which `environment` is passed to `openLink` — these **must** match,
   since a session is bound to the environment it was minted against

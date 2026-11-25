@@ -10,11 +10,11 @@ function setStatus(msg) {
 }
 
 // ---- Environment switcher ---- //
-// Production is the default; the selected value is sent to the main process
+// Sandbox is the default; the selected value is sent to the main process
 // so it picks the matching MFS API host + credentials. Also drives which
 // Link deployment openLink() loads (must match what the session was minted
 // against — see @meshpayhq/link-web-sdk's README on `environment`).
-let environment = 'production'
+let environment = 'sandbox'
 const envSwitch = document.getElementById('envSwitch')
 envSwitch.addEventListener('click', (e) => {
   const btn = e.target.closest('.seg-btn')

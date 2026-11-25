@@ -86,7 +86,7 @@ function buildSessionBody(toAddresses) {
 // drive the destination list; `overrides.environment` ('production' |
 // 'sandbox') picks which creds/host to use.
 ipcMain.handle('mfs:create-session', async (_event, overrides) => {
-  const environment = overrides?.environment === 'sandbox' ? 'sandbox' : 'production'
+  const environment = overrides?.environment === 'production' ? 'production' : 'sandbox'
   const creds = MFS_ENVIRONMENTS[environment]
   if (!creds.clientId || !creds.clientSecret) {
     throw new Error(
@@ -121,6 +121,18 @@ ipcMain.handle('mfs:create-session', async (_event, overrides) => {
   return { token: data.token, clientId: creds.clientId, linkEnv: creds.linkEnv }
 })
 
+// Only https pages on meshpay.com or its subdomains get their framing headers
+// stripped. Matching the hostname, not the whole URL, keeps a look-alike such as
+// https://meshpay.com.example.org or https://example.org/?meshpay.com out.
+function isMeshpayUrl(url) {
+  try {
+    const { protocol, hostname } = new URL(url)
+    return protocol === 'https:' && (hostname === 'meshpay.com' || hostname.endsWith('.meshpay.com'))
+  } catch {
+    return false
+  }
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 600,
@@ -142,8 +154,7 @@ app.whenReady().then(() => {
   // embedding. Strip those for meshpay.com domains so the SDK iframe renders
   // correctly.
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    const isMeshpay = /meshpay\.com/.test(details.url || '')
-    if (!isMeshpay) return callback({ responseHeaders: details.responseHeaders })
+    if (!isMeshpayUrl(details.url)) return callback({ responseHeaders: details.responseHeaders })
 
     const headers = details.responseHeaders || {}
     for (const key of Object.keys(headers)) {
