@@ -1,0 +1,27 @@
+{
+  "name": "electron-mfs-app",
+  "version": "1.0.0",
+  "description": "Simple Electron app that embeds the MFS Link Web SDK in an iframe",
+  "main": "main.js",
+  "scripts": {
+    "build": "esbuild src/renderer.js --bundle --outfile=dist/renderer.js --format=iife",
+    "start": "npm run build && electron .",
+    "dev": "npm run build && electron ."
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "esbuild": "^0.21.0"
+  },
+  "dependencies": {
+    "@meshpayhq/link-web-sdk": "0.0.12",
+    "dotenv": "^17.4.2"
+  },
+  "allowScripts": {
+    "electron": true,
+    "esbuild": true,
+    "bufferutil@4.1.0": true,
+    "utf-8-validate@6.0.6": true
+  }
+}
