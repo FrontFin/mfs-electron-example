@@ -193,10 +193,12 @@ runBtn.addEventListener('click', async () => {
       onExit: ({ status }) => {
         console.log('[MFS] exited', status)
         setStatus(`Closed (${status}).`)
+        activeHandle.close()
       },
       onError: (error) => {
         console.error('[MFS] error', error)
         setStatus(`Error: ${error.code} — ${error.message}`)
+        activeHandle.close()
       }
     })
   } catch (err) {
