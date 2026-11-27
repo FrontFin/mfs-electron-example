@@ -143,12 +143,14 @@ function isMeshpayUrl(url) {
 
 // The one document allowed to be a window's top-level page: the bundled
 // index.html loaded with loadFile().
-const APP_PAGE_PATH = pathToFileURL(path.join(__dirname, 'index.html')).pathname
+const APP_PAGE = pathToFileURL(path.join(__dirname, 'index.html'))
 
+// Host is compared too: on a Windows UNC checkout, file://host-a/share/... and
+// file://host-b/share/... share a pathname.
 function isAppPage(url) {
   try {
     const u = new URL(url)
-    return u.protocol === 'file:' && u.pathname === APP_PAGE_PATH
+    return u.protocol === 'file:' && u.host === APP_PAGE.host && u.pathname === APP_PAGE.pathname
   } catch {
     return false
   }
@@ -231,7 +233,9 @@ app.on('web-contents-created', (_event, contents) => {
   contents.on('will-attach-webview', (event) => event.preventDefault())
   contents.setWindowOpenHandler(({ url }) => {
     try {
-      if (new URL(url).protocol === 'https:') shell.openExternal(url)
+      if (new URL(url).protocol === 'https:') {
+        shell.openExternal(url).catch((err) => console.error(`Could not open ${url} in the browser:`, err))
+      }
     } catch {
       // Not a URL; ignore.
     }
