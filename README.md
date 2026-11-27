@@ -59,7 +59,7 @@ npm start          # bundles the renderer with esbuild, then launches Electron
 ## 📁 Project layout
 
 ```
-main.js          Electron main process (window, header stripping, OAuth token mint + session create)
+main.js          Electron main process (window, security guards, header stripping, OAuth token mint + session create)
 preload.js       contextBridge exposing window.mfs.createSession({ toAddresses, environment })
 index.html       UI: environment switcher, New Session button, Destinations editor, #mesh-container iframe; page CSP
 src/renderer.js  MFS SDK wiring (openLink) + Destinations editor state
