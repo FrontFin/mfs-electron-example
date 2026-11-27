@@ -1,5 +1,6 @@
-const { app, BrowserWindow, session, ipcMain } = require('electron')
+const { app, BrowserWindow, session, ipcMain, shell } = require('electron')
 const path = require('path')
+const { pathToFileURL } = require('url')
 const crypto = require('crypto')
 require('dotenv').config({ path: path.join(__dirname, '.env') })
 
@@ -26,10 +27,8 @@ const MFS_ENVIRONMENTS = {
 
 // Scopes needed to create a session via the S2S token (see
 // POST /oauth2/token below) and to use the session JWT it inherits them into.
-// `transfers:edit` (not just `:read`) is required for POST /v2/transfer-quotes
-// — `:edit` implies `:read` at the policy layer, but not the reverse (see
-// ingress's AuthorizationTests.cs: POST /v2/routes accepts `transfers:read`,
-// POST /v2/transfer-quotes requires `transfers:edit`).
+// `transfers:edit` (not just `:read`) is required for POST /v2/transfer-quotes;
+// `:edit` implies `:read`, but not the reverse.
 const SESSION_SCOPES = ['sessions:edit', 'sessions:read', 'connections:edit', 'transfers:edit']
 
 // Default destination used when the renderer doesn't supply its own. The
@@ -87,7 +86,12 @@ function buildSessionBody(toAddresses) {
 // `openLink` consumes directly. `overrides.toAddresses` lets the renderer
 // drive the destination list; `overrides.environment` ('production' |
 // 'sandbox') picks which creds/host to use.
-ipcMain.handle('mfs:create-session', async (_event, overrides) => {
+ipcMain.handle('mfs:create-session', async (event, overrides) => {
+  // Only the bundled app page may mint sessions. A sub-frame (the Link iframe)
+  // or any other document that reached a window cannot use the credentials.
+  if (!isAppFrame(event.senderFrame)) {
+    throw new Error('mfs:create-session: caller is not the app page')
+  }
   const environment = overrides?.environment === 'production' ? 'production' : 'sandbox'
   const creds = MFS_ENVIRONMENTS[environment]
   if (!creds.clientId || !creds.clientSecret) {
@@ -135,6 +139,33 @@ function isMeshpayUrl(url) {
   }
 }
 
+// The one document allowed to be a window's top-level page: the bundled
+// index.html loaded with loadFile().
+const APP_PAGE = pathToFileURL(path.join(__dirname, 'index.html'))
+
+// Host is compared too: on a Windows UNC checkout, file://host-a/share/... and
+// file://host-b/share/... share a pathname.
+function isAppPage(url) {
+  try {
+    const u = new URL(url)
+    return u.protocol === 'file:' && u.host === APP_PAGE.host && u.pathname === APP_PAGE.pathname
+  } catch {
+    return false
+  }
+}
+
+function isAppFrame(frame) {
+  return Boolean(frame) && frame.parent === null && isAppPage(frame.url)
+}
+
+// Permissions the embedded Link frame may use (the SDK delegates clipboard to
+// it). Everything else, from any origin, is refused.
+const ALLOWED_PERMISSIONS = new Set(['clipboard-read', 'clipboard-sanitized-write'])
+
+function isAllowedPermission(permission, origin) {
+  return ALLOWED_PERMISSIONS.has(permission) && isMeshpayUrl(origin)
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 600,
@@ -143,7 +174,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      sandbox: true
     }
   })
 
@@ -172,10 +204,40 @@ app.whenReady().then(() => {
     callback({ responseHeaders: headers })
   })
 
+  // Deny every permission request and check by default; only the clipboard
+  // access the Link SDK delegates, and only for meshpay.com origins, is allowed.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+    callback(isAllowedPermission(permission, details.requestingUrl || ''))
+  })
+  session.defaultSession.setPermissionCheckHandler((_wc, permission, requestingOrigin) =>
+    isAllowedPermission(permission, requestingOrigin)
+  )
+
   createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+// Every window and webview: the top-level page can never leave the bundled
+// app page (no navigation from the Link frame, a dropped link or a redirect),
+// and web content cannot open new app windows. https links it tries to open go
+// to the user's default browser instead.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (event, url) => {
+    if (!isAppPage(url)) event.preventDefault()
+  })
+  contents.on('will-attach-webview', (event) => event.preventDefault())
+  contents.setWindowOpenHandler(({ url }) => {
+    try {
+      if (new URL(url).protocol === 'https:') {
+        shell.openExternal(url).catch((err) => console.error(`Could not open ${url} in the browser:`, err))
+      }
+    } catch {
+      // Not a URL; ignore.
+    }
+    return { action: 'deny' }
   })
 })
 

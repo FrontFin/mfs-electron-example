@@ -173,7 +173,13 @@
       <button id="runBtn">New Session</button>
     </div>
     <div id="status"></div>
-    <iframe id="mesh-container" title="Mesh Link"></iframe>
+    <!-- sandbox: Link gets scripts, its own origin, forms and popups, but not
+         allow-top-navigation, so it cannot replace this page. -->
+    <iframe
+      id="mesh-container"
+      title="Mesh Link"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+    ></iframe>
 
     <script src="dist/renderer.js"></script>
   </body>
