@@ -27,10 +27,8 @@ const MFS_ENVIRONMENTS = {
 
 // Scopes needed to create a session via the S2S token (see
 // POST /oauth2/token below) and to use the session JWT it inherits them into.
-// `transfers:edit` (not just `:read`) is required for POST /v2/transfer-quotes
-// — `:edit` implies `:read` at the policy layer, but not the reverse (see
-// ingress's AuthorizationTests.cs: POST /v2/routes accepts `transfers:read`,
-// POST /v2/transfer-quotes requires `transfers:edit`).
+// `transfers:edit` (not just `:read`) is required for POST /v2/transfer-quotes;
+// `:edit` implies `:read`, but not the reverse.
 const SESSION_SCOPES = ['sessions:edit', 'sessions:read', 'connections:edit', 'transfers:edit']
 
 // Default destination used when the renderer doesn't supply its own. The
